@@ -14,6 +14,9 @@
         <button @click="fetchAppointments()" class="nb-button green" x-show="!isWatching">start watching</button>
         <button @click="stopWatching()" class="nb-button orange" x-show="isWatching">stop watching</button>
     </div>
+    <div class="section form">
+        <button @click="notify('Notifications are working!')" class="nb-button green">test notifications</button>
+    </div>
     <div class="section middle">
         <div class="alert info" x-show="!error && nextAppointment && !nextAppointmentIsValid">
             <p>Bad news :( next appointment <span x-text="nextAppointment"></span></p>
@@ -45,7 +48,6 @@
             nextAppointmentIsValid: false,
             error: null,
             fetchAppointments: async function() {
-                console.log('fetching');
                 this.isWatching = true;
                 let url = "https://ttp.cbp.dhs.gov/schedulerapi/slots?orderBy=soonest&limit=100&locationId=5002&minimum=1";
                 try {
@@ -59,6 +61,7 @@
                     this.nextAppointment = dayjs(json[0].startTimestamp).format('dddd MMM D, YYYY [at] h:mm a');
                     if (dayjs(json[0].startTimestamp).isBefore(dayjs().add(this.daysAhead, 'day'))) {
                         this.nextAppointmentIsValid = true;
+                        this.notify(`SENTRI appointment available ${this.nextAppointment}`);
                     } else {
                         this.nextAppointmentIsValid = false;
                     }
@@ -70,8 +73,10 @@
                     this.timer = setTimeout(this.fetchAppointments.bind(this), 5000);
                 }
             },
-            notidfy: function() {
-
+            notify: function(text) {
+                if (Notification.permission === 'granted') {
+                    new Notification(text);
+                }
             },
             stopWatching: function() {
                 this.isWatching = false;
