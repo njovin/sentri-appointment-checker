@@ -1,0 +1,8 @@
+services:
+  sentri-checker-web:
+    image: nginx:latest
+    ports:
+      - '${SENTRI_CHECKER_PORT:-9292}:80'
+    volumes:
+      - .:/code
+      - ./site.conf:/etc/nginx/conf.d/default.conf

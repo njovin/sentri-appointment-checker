@@ -1,0 +1,85 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/neobrutalismcss@latest" />
+    <link rel='stylesheet' id='wp-mediaelement-css' href='style.css' type='text/css' media='all' />
+</head>
+<body>
+<div class="container" x-data="data">
+    <h1 class="section">SENTRI appointment checker</h1>
+    <div class="section form">
+        <div class="nb-label">Days ahead to search</div>
+        <input class="nb-input default" type="number" x-model.debounce.50ms="daysAhead">
+    </div>
+    <div class="section form">
+        <button @click="fetchAppointments()" class="nb-button green" x-show="!isWatching">start watching</button>
+        <button @click="stopWatching()" class="nb-button orange" x-show="isWatching">stop watching</button>
+    </div>
+    <div class="section middle">
+        <div class="alert info" x-show="!error && nextAppointment && !nextAppointmentIsValid">
+            <p>Bad news :( next appointment <span x-text="nextAppointment"></span></p>
+        </div>
+        <div class="alert success" x-show="!error && nextAppointment && nextAppointmentIsValid">
+            <p>Good news :) next appointment <span x-text="nextAppointment"></span></p>
+        </div>
+    </div>
+    <div class="section">
+        <a href="https://github.com/njovin/sentri-appointment-checker">github</a>
+    </div>
+</div>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+<script>
+        Notification.requestPermission()
+        .then(permission => {
+            console.log(`Permission: ${permission}`);
+        })
+        .catch(error => {
+            console.error(`Error: ${error}`);
+        });
+    document.addEventListener('alpine:init', function () {
+        Alpine.data('data', () => ({
+            daysAhead: 60,
+            isWatching: false,
+            timer: null,
+            nextAppointment: null,
+            nextAppointmentIsValid: false,
+            error: null,
+            fetchAppointments: async function() {
+                console.log('fetching');
+                this.isWatching = true;
+                let url = "https://ttp.cbp.dhs.gov/schedulerapi/slots?orderBy=soonest&limit=100&locationId=5002&minimum=1";
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        console.error(response);
+                        this.error = `Error fetching appointments: ${response.status}`;
+                    }
+                    this.error = null;
+                    const json = await response.json();
+                    this.nextAppointment = dayjs(json[0].startTimestamp).format('dddd MMM D, YYYY [at] h:mm a');
+                    if (dayjs(json[0].startTimestamp).isBefore(dayjs().add(this.daysAhead, 'day'))) {
+                        this.nextAppointmentIsValid = true;
+                    } else {
+                        this.nextAppointmentIsValid = false;
+                    }
+                } catch (error) {
+                    console.error(error.message);
+                    this.error = `Error fetching appointments: ${error.message}`;
+                }
+                if (this.isWatching) {
+                    this.timer = setTimeout(this.fetchAppointments.bind(this), 5000);
+                }
+            },
+            notidfy: function() {
+
+            },
+            stopWatching: function() {
+                this.isWatching = false;
+                this.nextAppointment = null;
+                clearTimeout(this.timer);
+            }
+        }));
+    });
+</script>
+</body>
+</html>
