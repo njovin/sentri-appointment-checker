@@ -70,7 +70,7 @@
                     this.error = `Error fetching appointments: ${error.message}`;
                 }
                 if (this.isWatching) {
-                    this.timer = setTimeout(this.fetchAppointments.bind(this), 5000);
+                    this.timer = setTimeout(this.fetchAppointments.bind(this), 30000);
                 }
             },
             notify: function(text) {
